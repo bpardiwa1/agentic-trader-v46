@@ -33,8 +33,9 @@ backups/
 *.tar.gz
 
 # --- Old versions ---
-fx_v4*/
-xau_v4*/
+!fx_v46/
+!xau_v46/
+!idx_v46/
 indices_v4*/
 */v4/
 */v4.*
