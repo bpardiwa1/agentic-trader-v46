@@ -28,14 +28,14 @@ jobs:
       # --------------------------------------------------------
       - name: Sync repository to live folder
         run: |
-          Write-Host "🔄 Syncing repository to $env:TARGET_ROOT ..."
+          Write-Host "Syncing repository to $env:TARGET_ROOT ..."
           robocopy $PWD $env:TARGET_ROOT /MIR /XD ".git" ".github" ".vscode" "__pycache__" "logs"
           $exitCode = $LASTEXITCODE
           if ($exitCode -le 7) {
-            Write-Host "✅ Repository synchronized to $env:TARGET_ROOT (exit code: $exitCode)"
+            Write-Host "Repository synchronized to $env:TARGET_ROOT (exit code: $exitCode)"
             exit 0
           } else {
-            Write-Host "❌ Robocopy failed (exit code: $exitCode)"
+            Write-Host "Robocopy failed (exit code: $exitCode)"
             exit $exitCode
           }
 
