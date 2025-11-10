@@ -27,6 +27,7 @@ ENV/
 logs/
 *.log
 *.bak
+*bkp*
 backup/
 backups/
 *.zip
