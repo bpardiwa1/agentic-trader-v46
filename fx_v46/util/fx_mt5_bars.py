@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 import MetaTrader5 as mt5  # type: ignore
-from fx_v4.app.fx_env import resolve_symbol
+from fx_v46.app.fx_env_v46 import resolve_symbol
 
 log = logging.getLogger("fx.mt5bars")
 

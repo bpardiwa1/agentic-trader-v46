@@ -1,9 +1,9 @@
 """
-Agentic Trader FX v4.2 — Unified Environment Loader
+Agentic Trader FX V46 — Unified Environment Loader
 ---------------------------------------------------
 Single source of truth for all FX runtime configuration.
 
-• Loads fx_v4.env automatically (using python-dotenv)
+• Loads fx_v46.env automatically (using python-dotenv)
 • Parses all environment variables into a structured FxEnv object
 • Exposes a global ENV singleton shared across all modules
 """
@@ -40,12 +40,12 @@ def _i(key: str, default: int) -> int:
 # =============================================================
 # Auto-load fx_v4.env
 # =============================================================
-ENV_PATH = pathlib.Path(__file__).resolve().parent / "fx_v4.env"
+ENV_PATH = pathlib.Path(__file__).resolve().parent / "fx_v46.env"
 if ENV_PATH.exists():
     load_dotenv(ENV_PATH)
     log.info(f"[FX_ENV] Loaded environment file: {ENV_PATH}")
 else:
-    log.warning(f"[FX_ENV] ⚠️ No fx_v4.env found at {ENV_PATH}")
+    log.warning(f"[FX_ENV] ⚠️ No fx_v46.env found at {ENV_PATH}")
 
 
 # =============================================================

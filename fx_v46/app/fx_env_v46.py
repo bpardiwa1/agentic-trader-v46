@@ -7,6 +7,8 @@
 import os
 from dotenv import load_dotenv
 
+from fx_v46.app.fx_env import ALIASES
+
 class DotDict(dict):
     """Dictionary with dot-style access (attr-style)."""
     __getattr__ = dict.get
@@ -47,6 +49,7 @@ class EnvNamespace:
             self.min_conf = 0.55
         self.AGENT_MIN_CONFIDENCE = self.min_conf
 
+   
     # --------------------------------------------------------
     # Smart accessors
     # --------------------------------------------------------
@@ -155,3 +158,12 @@ def _build_per_symbol_map():
 
 _build_per_symbol_map()
 
+def resolve_symbol(symbol: str) -> str:
+        """Return broker-specific alias for logical symbol."""
+        sym_upper = symbol.upper()
+        if sym_upper in ALIASES:
+            return ALIASES[sym_upper]
+        for v in ALIASES.values():
+            if sym_upper == v.upper():
+                return v
+        return symbol
