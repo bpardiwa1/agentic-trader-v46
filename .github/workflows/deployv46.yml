@@ -1,4 +1,4 @@
-name: Deploy Agentic Trader V2 (Service Restart Mode)
+name: Deploy Agentic Trader V46 (Service Restart Mode)
 
 on:
   workflow_dispatch:
