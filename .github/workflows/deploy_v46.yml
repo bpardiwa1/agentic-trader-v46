@@ -1,7 +1,7 @@
-name: 🚀 Deploy Agentic Trader V4.6 (Service Restart Mode)
+name: 🚀 Deploy Agentic Trader v4.6 (Sync + Build venv only)
 
 on:
-  workflow_dispatch:    # Manual trigger from GitHub Actions tab
+  workflow_dispatch:   # Manual trigger from GitHub Actions tab
 
 defaults:
   run:
@@ -11,7 +11,6 @@ env:
   TARGET_ROOT: 'C:\agentic-trader'
   PY_EXE: 'C:\Users\Administrator\AppData\Local\Programs\Python\Python311\python.exe'
   VENV_DIR: '.venv'
-  NSSM_PATH: 'C:\nssm\nssm-2.24\win64\nssm.exe'
 
 jobs:
   deploy:
@@ -40,55 +39,17 @@ jobs:
           }
 
       # --------------------------------------------------------
-      # Stop running Agentic Trader v4.6 services
+      # Build or Refresh Python virtual environment
       # --------------------------------------------------------
-      - name: Stop existing Agentic Trader v4.6 services
-        run: |
-          Write-Host "🛑 Stopping Agentic Trader v4.6 services..."
-         # & $env:NSSM_PATH stop AgenticTrader_FXv46 -ErrorAction SilentlyContinue
-         # & $env:NSSM_PATH stop AgenticTrader_XAUv46 -ErrorAction SilentlyContinue
-         # & $env:NSSM_PATH stop AgenticTrader_INDEXv46 -ErrorAction SilentlyContinue
-          Start-Sleep -Seconds 5
-          Write-Host "✅ All Agentic Trader v4.6 services stopped."
-
-      # --------------------------------------------------------
-      # Rebuild Python virtual environment
-      # --------------------------------------------------------
-      - name: Rebuild Python virtual environment
+      - name: Build Python virtual environment
         run: |
           cd $env:TARGET_ROOT
           if (Test-Path $env:VENV_DIR) {
             Write-Host "♻️ Removing existing virtual environment..."
             Remove-Item -Recurse -Force $env:VENV_DIR
           }
-          Write-Host "🧱 Creating new virtual environment..."
+          Write-Host "📦 Creating new virtual environment..."
           & $env:PY_EXE -m venv $env:VENV_DIR
           & "$env:VENV_DIR\Scripts\pip.exe" install --upgrade pip
           & "$env:VENV_DIR\Scripts\pip.exe" install -r requirements.txt
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "❌ Failed to rebuild virtual environment."
-            exit $LASTEXITCODE
-          }
-          Write-Host "✅ Virtual environment ready."
-
-      # --------------------------------------------------------
-      # Restart updated Agentic Trader services
-      # --------------------------------------------------------
-      - name: Start updated Agentic Trader v4.6 services
-        run: |
-          Write-Host "🚀 Starting updated Agentic Trader v4.6 services..."
-          # & $env:NSSM_PATH start AgenticTrader_FXv46
-          # & $env:NSSM_PATH start AgenticTrader_XAUv46
-          # & $env:NSSM_PATH start AgenticTrader_INDEXv46
-          Write-Host "✅ All Agentic Trader v4.6 services started."
-
-      # --------------------------------------------------------
-      # Verify service status
-      # --------------------------------------------------------
-      - name: Verify service status
-        run: |
-          Write-Host "`n🔍 Verifying service status..."
-          # & $env:NSSM_PATH status AgenticTrader_FXv46
-          # & $env:NSSM_PATH status AgenticTrader_XAUv46
-          # & $env:NSSM_PATH status AgenticTrader_INDEXv46
-          Write-Host "`n✅ Deployment completed successfully."
+          Write-Host "✅ Python environment ready."
