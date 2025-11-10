@@ -33,6 +33,7 @@ jobs:
           $exitCode = $LASTEXITCODE
           if ($exitCode -le 7) {
             Write-Host "✅ Repository synchronized to $env:TARGET_ROOT (exit code: $exitCode)"
+            exit 0
           } else {
             Write-Host "❌ Robocopy failed (exit code: $exitCode)"
             exit $exitCode
