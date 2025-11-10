@@ -1,0 +1,59 @@
+# =============================================================
+# Agentic Trader v4.6 Git Ignore Rules
+# =============================================================
+
+# --- Python build & cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# --- Logs & Backups ---
+logs/
+*.log
+*.bak
+backup/
+backups/
+*.zip
+*.tar.gz
+
+# --- Old versions ---
+fx_v4*/
+xau_v4*/
+indices_v4*/
+*/v4/
+*/v4.*
+
+# --- Environment files (safe templates only) ---
+# Keep only safe, non-secret env files under version control
+.env
+!fx.env
+!xau.env
+!indices.env
+
+# --- Local test data ---
+tmp/
+tests/
+scratch/
+notebooks/
+__temp__/
+
+# --- Deployment artifacts ---
+deploy-output/
+dist/
+build/
