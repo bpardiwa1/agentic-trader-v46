@@ -1,4 +1,4 @@
-name: 🚀 Deploy Agentic Trader v4.6 (Sync + Build venv only)
+name: Deploy Agentic Trader v4.6 (Sync + Build venv only)
 
 on:
   workflow_dispatch:   # Manual trigger from GitHub Actions tab
@@ -46,11 +46,11 @@ jobs:
         run: |
           cd $env:TARGET_ROOT
           if (Test-Path $env:VENV_DIR) {
-            Write-Host "♻️ Removing existing virtual environment..."
+            Write-Host "Removing existing virtual environment..."
             Remove-Item -Recurse -Force $env:VENV_DIR
           }
-          Write-Host "📦 Creating new virtual environment..."
+          Write-Host "Creating new virtual environment..."
           & $env:PY_EXE -m venv $env:VENV_DIR
           & "$env:VENV_DIR\Scripts\pip.exe" install --upgrade pip
           & "$env:VENV_DIR\Scripts\pip.exe" install -r requirements.txt
-          Write-Host "✅ Python environment ready."
+          Write-Host "Python environment ready."
