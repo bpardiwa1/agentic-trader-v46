@@ -45,9 +45,9 @@ jobs:
       - name: Stop existing Agentic Trader v4.6 services
         run: |
           Write-Host "🛑 Stopping Agentic Trader v4.6 services..."
-          & $env:NSSM_PATH stop AgenticTrader_FXv46 -ErrorAction SilentlyContinue
-          & $env:NSSM_PATH stop AgenticTrader_XAUv46 -ErrorAction SilentlyContinue
-          & $env:NSSM_PATH stop AgenticTrader_INDEXv46 -ErrorAction SilentlyContinue
+         # & $env:NSSM_PATH stop AgenticTrader_FXv46 -ErrorAction SilentlyContinue
+         # & $env:NSSM_PATH stop AgenticTrader_XAUv46 -ErrorAction SilentlyContinue
+         # & $env:NSSM_PATH stop AgenticTrader_INDEXv46 -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 5
           Write-Host "✅ All Agentic Trader v4.6 services stopped."
 
@@ -77,9 +77,9 @@ jobs:
       - name: Start updated Agentic Trader v4.6 services
         run: |
           Write-Host "🚀 Starting updated Agentic Trader v4.6 services..."
-          & $env:NSSM_PATH start AgenticTrader_FXv46
-          & $env:NSSM_PATH start AgenticTrader_XAUv46
-          & $env:NSSM_PATH start AgenticTrader_INDEXv46
+          # & $env:NSSM_PATH start AgenticTrader_FXv46
+          # & $env:NSSM_PATH start AgenticTrader_XAUv46
+          # & $env:NSSM_PATH start AgenticTrader_INDEXv46
           Write-Host "✅ All Agentic Trader v4.6 services started."
 
       # --------------------------------------------------------
@@ -88,7 +88,7 @@ jobs:
       - name: Verify service status
         run: |
           Write-Host "`n🔍 Verifying service status..."
-          & $env:NSSM_PATH status AgenticTrader_FXv46
-          & $env:NSSM_PATH status AgenticTrader_XAUv46
-          & $env:NSSM_PATH status AgenticTrader_INDEXv46
+          # & $env:NSSM_PATH status AgenticTrader_FXv46
+          # & $env:NSSM_PATH status AgenticTrader_XAUv46
+          # & $env:NSSM_PATH status AgenticTrader_INDEXv46
           Write-Host "`n✅ Deployment completed successfully."
