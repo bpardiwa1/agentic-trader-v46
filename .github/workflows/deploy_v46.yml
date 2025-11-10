@@ -1,0 +1,94 @@
+name: 🚀 Deploy Agentic Trader V4.6 (Service Restart Mode)
+
+on:
+  workflow_dispatch:    # Manual trigger from GitHub Actions tab
+
+defaults:
+  run:
+    shell: powershell
+
+env:
+  TARGET_ROOT: 'C:\agentic-trader'
+  PY_EXE: 'C:\Users\Administrator\AppData\Local\Programs\Python\Python311\python.exe'
+  VENV_DIR: '.venv'
+  NSSM_PATH: 'C:\nssm\nssm-2.24\win64\nssm.exe'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      # --------------------------------------------------------
+      # Checkout latest repository
+      # --------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # Sync repository to live folder
+      # --------------------------------------------------------
+      - name: Sync repository to live folder
+        run: |
+          Write-Host "🔄 Syncing repository to $env:TARGET_ROOT ..."
+          robocopy $PWD $env:TARGET_ROOT /MIR /XD ".git" ".github" ".vscode" "__pycache__" "logs"
+          $exitCode = $LASTEXITCODE
+          if ($exitCode -le 7) {
+            Write-Host "✅ Repository synchronized to $env:TARGET_ROOT (exit code: $exitCode)"
+          } else {
+            Write-Host "❌ Robocopy failed (exit code: $exitCode)"
+            exit $exitCode
+          }
+
+      # --------------------------------------------------------
+      # Stop running Agentic Trader v4.6 services
+      # --------------------------------------------------------
+      - name: Stop existing Agentic Trader v4.6 services
+        run: |
+          Write-Host "🛑 Stopping Agentic Trader v4.6 services..."
+          & $env:NSSM_PATH stop AgenticTrader_FXv46 -ErrorAction SilentlyContinue
+          & $env:NSSM_PATH stop AgenticTrader_XAUv46 -ErrorAction SilentlyContinue
+          & $env:NSSM_PATH stop AgenticTrader_INDEXv46 -ErrorAction SilentlyContinue
+          Start-Sleep -Seconds 5
+          Write-Host "✅ All Agentic Trader v4.6 services stopped."
+
+      # --------------------------------------------------------
+      # Rebuild Python virtual environment
+      # --------------------------------------------------------
+      - name: Rebuild Python virtual environment
+        run: |
+          cd $env:TARGET_ROOT
+          if (Test-Path $env:VENV_DIR) {
+            Write-Host "♻️ Removing existing virtual environment..."
+            Remove-Item -Recurse -Force $env:VENV_DIR
+          }
+          Write-Host "🧱 Creating new virtual environment..."
+          & $env:PY_EXE -m venv $env:VENV_DIR
+          & "$env:VENV_DIR\Scripts\pip.exe" install --upgrade pip
+          & "$env:VENV_DIR\Scripts\pip.exe" install -r requirements.txt
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Failed to rebuild virtual environment."
+            exit $LASTEXITCODE
+          }
+          Write-Host "✅ Virtual environment ready."
+
+      # --------------------------------------------------------
+      # Restart updated Agentic Trader services
+      # --------------------------------------------------------
+      - name: Start updated Agentic Trader v4.6 services
+        run: |
+          Write-Host "🚀 Starting updated Agentic Trader v4.6 services..."
+          & $env:NSSM_PATH start AgenticTrader_FXv46
+          & $env:NSSM_PATH start AgenticTrader_XAUv46
+          & $env:NSSM_PATH start AgenticTrader_INDEXv46
+          Write-Host "✅ All Agentic Trader v4.6 services started."
+
+      # --------------------------------------------------------
+      # Verify service status
+      # --------------------------------------------------------
+      - name: Verify service status
+        run: |
+          Write-Host "`n🔍 Verifying service status..."
+          & $env:NSSM_PATH status AgenticTrader_FXv46
+          & $env:NSSM_PATH status AgenticTrader_XAUv46
+          & $env:NSSM_PATH status AgenticTrader_INDEXv46
+          Write-Host "`n✅ Deployment completed successfully."
