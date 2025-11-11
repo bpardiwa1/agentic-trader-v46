@@ -1,102 +1,96 @@
 # ============================================================
-# Agentic Trader IDX v4.6 — PowerShell Runner (with Server Mode)
-# ------------------------------------------------------------
-# Usage:
-#   ./run_idx_v46.ps1 [-Loop] [-Interval 20] [-LogConsole] [-Server]
-#
-# Modes:
-#   -Loop        → Run IDX agent continuously
-#   -Interval N  → Seconds between cycles (default: 20)
-#   -LogConsole  → Stream logs to console instead of file
-#   -Server      → Start FastAPI Uvicorn dashboard (app.main)
+# Agentic Trader — IDX v4.6 Runner (PowerShell)
+# ============================================================
+# This script launches the Indices agent (NAS100.s, UK100.s, HK50.s)
+# in a persistent loop with environment variables loaded from app\idx_v46.env
+# and logs captured under logs\IDX_YYYY-MM-DD_HH-MM-SS.log
 # ============================================================
 
-param(
-    [switch]$Loop = $false,
-    [int]$Interval = 60,
-    [switch]$LogConsole = $false,
-    [switch]$Server = $false
-)
+$ErrorActionPreference = "Stop"
 
-# -------------------------------
-# Setup Paths
-# -------------------------------
-$RootPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Set-Location $RootPath
+# --- Directories --------------------------------------------------------
+$RootDir = "C:\Users\Bomi\AgenticAI\agentic-trader"
+$AppDir  = "$RootDir\idx_v46"
+$EnvFile = "$AppDir\app\idx_v46.env"
+$LogDir  = "$RootDir\logs"
 
-$EnvFile = Join-Path $RootPath "idx_v46\app\idx_v46.env"
-$LogDir  = Join-Path $RootPath "logs"
-if (-not (Test-Path $LogDir)) {
-    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+# --- Ensure log directory exists ---------------------------------------
+if (!(Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir | Out-Null
 }
 
-$Timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-$LogFile = Join-Path $LogDir "IDX_${Timestamp}.log"
+# --- Timestamped log filename ------------------------------------------
+$Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
+$LogFile = "$LogDir\IDX_$Timestamp.log"
+$LatestLink = "$LogDir\IDX.latest.log"
 
-# -------------------------------
-# Activate Virtual Environment
-# -------------------------------
-if (Test-Path ".venv\Scripts\Activate.ps1") {
-    Write-Host "[INIT] Activating virtual environment..."
-    . ".venv\Scripts\Activate.ps1"
-}
-else {
-    Write-Host "[WARN] No virtual environment found (.venv). Using system Python..."
-}
-
-# -------------------------------
-# Verify Environment File
-# -------------------------------
-if (-not (Test-Path $EnvFile)) {
-    Write-Host "[ERROR] IDX environment file not found at: $EnvFile"
+# --- Activate venv -----------------------------------------------------
+$VenvPath = "$RootDir\.venv\Scripts\Activate.ps1"
+if (Test-Path $VenvPath) {
+    Write-Host "Activating Python venv..."
+    & $VenvPath
+} else {
+    Write-Host "❌ Virtual environment not found at $VenvPath"
     exit 1
 }
 
-Write-Host "[INFO] Using environment file: $EnvFile"
-$env:DOTENV_FILE = $EnvFile
-
-# -------------------------------
-# Select Mode
-# -------------------------------
-if ($Server) {
-    Write-Host "[MODE] Server mode → launching FastAPI dashboard..."
-    $Port = 9010
-    Write-Host "[INFO] Starting Uvicorn on http://127.0.0.1:$Port"
-
-    # Clear any agent args
-    $Arg = @()
-
-    # Use plain python call for reliability
-    python -m uvicorn idx_v46.idx_main_v46:app --host 127.0.0.1 --port $Port
-    exit 0
+# --- Load environment file ---------------------------------------------
+Write-Host "Loading environment variables from: $EnvFile"
+if (Test-Path $EnvFile) {
+    Get-Content $EnvFile | ForEach-Object {
+        if ($_ -match '^\s*#') { return }
+        if ($_ -match '^\s*$') { return }
+        $pair = $_ -split '=', 2
+        if ($pair.Length -eq 2) {
+            [System.Environment]::SetEnvironmentVariable($pair[0].Trim(), $pair[1].Trim(), "Process")
+        }
+    }
+} else {
+    Write-Host "❌ Environment file not found: $EnvFile"
+    exit 1
 }
 
-# -------------------------------
-# Prepare Python arguments (Agent)
-# -------------------------------
-$Arg = @("--interval", "$Interval")
-if ($Loop) { $Arg += "--loop" }
-$ArgList = @("-m", "idx_v46.idx_main_v46") + $Arg
-
-# -------------------------------
-# Run IDX Agent
-# -------------------------------
-Write-Host "[INFO] Launching Agentic Trader IDX v4.6"
-Write-Host "------------------------------------------------------------"
-
-if ($LogConsole) {
-    # Interactive console output
-    Write-host "[RUNNING]: $ArgList"
-    & python.exe $ArgList
+# --- Create latest symlink for convenience ------------------------------
+# --- Ensure log file exists before linking ------------------------------
+if (!(Test-Path $LogFile)) {
+    New-Item -ItemType File -Path $LogFile | Out-Null
 }
-else {
-    # Background mode (log file)
-    Start-Process -NoNewWindow -FilePath "python.exe" `
-        -ArgumentList $ArgList `
-        -RedirectStandardOutput $LogFile `
-        -RedirectStandardError $LogFile `
-        -PassThru | Out-Null
 
-    Write-Host "[RUNNING] Log file: $LogFile"
-    Write-Host "[TIP] To tail logs: Get-Content -Path '$LogFile' -Wait"
+# --- Create latest symlink for convenience ------------------------------
+if (Test-Path $LatestLink) {
+    Remove-Item $LatestLink -Force
 }
+try {
+    New-Item -ItemType SymbolicLink -Path $LatestLink -Target $LogFile | Out-Null
+} catch {
+    Write-Warning "Could not create symbolic link for latest log: $($_.Exception.Message)"
+}
+
+
+# --- Run agent ----------------------------------------------------------
+Write-Host "============================================================"
+Write-Host "Launching IDX v4.6 Agent..."
+Write-Host "Symbols: $env:AGENT_SYMBOLS"
+Write-Host "Timeframe: $env:IDX_TIMEFRAME"
+Write-Host "Logging to: $LogFile"
+Write-Host "============================================================"
+
+$PythonExe = "$RootDir\.venv\Scripts\python.exe"
+$MainScript = "$AppDir\idx_main_v46.py"
+
+if (!(Test-Path $PythonExe)) {
+    Write-Host "❌ Python executable not found at $PythonExe"
+    exit 1
+}
+
+if (!(Test-Path $MainScript)) {
+    Write-Host "❌ IDX main script not found at $MainScript"
+    exit 1
+}
+
+# --- Launch main module with loop + info level logging -----------------
+# & $PythonExe -m idx_v46.idx_main_v46 --loop --loglevel INFO *>&1 | Tee-Object -FilePath $LogFile
+& $PythonExe -m idx_v46.idx_main_v46 --loop --loglevel INFO 
+Write-Host "============================================================"
+Write-Host "IDX v4.6 Agent stopped or exited."
+Write-Host "============================================================"

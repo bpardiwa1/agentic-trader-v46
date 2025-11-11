@@ -1,127 +1,81 @@
 # ============================================================
-# Agentic Trader IDX v4.6 — Feature Computation
-# ------------------------------------------------------------
-# • KL-time aware trading sessions (symbol-specific)
-# • EMA / RSI / ATR computation
-# • ATR-scaled SL/TP for index CFDs
-# • Log format aligned with FX/XAU modules
+# Agentic Trader idx_v46 — Feature Computation (Env-Driven)
 # ============================================================
 
 from __future__ import annotations
-import datetime as dt
-from typing import Any, Dict
-import numpy as np
-import pytz
+import pandas as pd
 
-from idx_v46.util.idx_indicators import ema, rsi, atr
-from idx_v46.util.idx_mt5_bars import get_bars
 from idx_v46.app.idx_env_v46 import ENV
-from idx_v46.util.logger import setup_logger
+from idx_v46.util.idx_mt5_bars_v46 import get_bars
+from idx_v46.util.idx_logger_v46 import setup_logger
+from idx_v46.util.idx_indicators_v46 import ema, rsi, atr
+from idx_v46.trust.idx_trust_engine_v46 import adjusted_confidence
 
-# ------------------------------------------------------------
-# Logger
-# ------------------------------------------------------------
-log = setup_logger("idx_features_v46", level=ENV.get("LOG_LEVEL", "INFO").upper())
+log = setup_logger("idx_features_v46", level=str(ENV.get("LOG_LEVEL", "INFO")))
 
 
-# ------------------------------------------------------------
-# Session Control — uses KL time and per-symbol overrides
-# ------------------------------------------------------------
-def _is_session_open(env, now: dt.datetime, symbol: str) -> bool:
-    tz = pytz.timezone("Asia/Kuala_Lumpur")
-    now_kl = tz.localize(now) if now.tzinfo is None else now.astimezone(tz)
-    weekday = now_kl.isoweekday()
-
-    sym = symbol.replace(".s", "").replace(".ecn", "").replace("-", "_").upper()
-    start_key = f"INDICES_TRADING_WINDOW_START_{sym}"
-    end_key = f"INDICES_TRADING_WINDOW_END_{sym}"
-    days_key = f"INDICES_TRADING_DAYS_{sym}"
-
-    start_str = env.get(start_key, env.get("INDICES_TRADING_WINDOW_START", "00:00"))
-    end_str = env.get(end_key, env.get("INDICES_TRADING_WINDOW_END", "23:59"))
-    days_str = env.get(days_key, env.get("INDICES_TRADING_DAYS", "1,2,3,4,5"))
-
+def compute_features(symbol: str) -> dict | None:
+    """
+    Fetch MT5 bars, compute EMA/RSI/ATR indicators,
+    derive normalized confidence metrics, and return feature dict.
+    All parameters are environment-driven.
+    """
     try:
-        sh, sm = map(int, start_str.split(":"))
-        eh, em = map(int, end_str.split(":"))
-        start_t = dt.time(sh, sm)
-        end_t = dt.time(eh, em)
-    except Exception:
-        return True  # fail open if parsing fails
+        tf = str(ENV.get("IDX_TIMEFRAME", "M15"))
+        n_bars = int(ENV.get("IDX_HISTORY_BARS", 240))
 
-    allowed_days = [int(x.strip()) for x in days_str.split(",") if x.strip().isdigit()]
-    if weekday not in allowed_days:
-        return False
+        ema_fast_p = int(ENV.get("IDX_EMA_FAST", 20))
+        ema_slow_p = int(ENV.get("IDX_EMA_SLOW", 50))
+        rsi_period = int(ENV.get("IDX_RSI_PERIOD", 14))
+        atr_period = int(ENV.get("IDX_ATR_PERIOD", 14))
 
-    t = now_kl.time()
-    if start_t <= end_t:
-        return start_t <= t <= end_t
-    return t >= start_t or t <= end_t
+        df = get_bars(symbol, timeframe=tf, limit=n_bars)
+        if df is None or len(df) < max(ema_fast_p, ema_slow_p, rsi_period, atr_period) + 1:
+            log.warning("[DATA] %s insufficient bars", symbol)
+            return None
 
+        closes = df["close"].astype(float)
+        price = float(closes.iloc[-1])
+        ema_fast_val = ema(closes, ema_fast_p)
+        ema_slow_val = ema(closes, ema_slow_p)
+        rsi_val = rsi(closes, rsi_period)
+        atr_val = atr(df, atr_period)
 
-# ------------------------------------------------------------
-# Core Feature Computation
-# ------------------------------------------------------------
-def compute_features(symbol: str, env=ENV) -> Dict[str, Any]:
-    tf = env.get("TIMEFRAME", "M15")
-    ema_fast = int(env.get("INDICES_EMA_FAST", 20))
-    ema_slow = int(env.get("INDICES_EMA_SLOW", 50))
-    rsi_period = int(env.get("INDICES_RSI_PERIOD", 14))
-    atr_period = int(env.get("INDICES_ATR_PERIOD", 14))
+        atr_pct = float(atr_val / price) if price else 0.0
+        ema_gap = float(ema_fast_val - ema_slow_val)
 
-    df = get_bars(symbol, tf, ema_slow + 50)
-    if df is None or df.empty or len(df) < ema_slow + 5:
-        log.warning("[SKIP] %s insufficient bars (len=%d)", symbol, 0 if df is None else len(df))
-        return {"ok": False, "note": "no_data"}
+        # weighted confidence (EMA + RSI)
+        ema_weight = float(ENV.get("IDX_CONF_BASE_WEIGHT_EMA", 0.5))
+        rsi_weight = float(ENV.get("IDX_CONF_BASE_WEIGHT_RSI", 0.5))
 
-    closes = df["close"].astype(float)
-    highs = df["high"].astype(float)
-    lows = df["low"].astype(float)
+        ema_score = min(1.0, abs(ema_gap) / (max(1e-9, atr_pct) * 2.0))
+        rsi_score = abs(rsi_val - 50.0) / 50.0
 
-    price = float(closes.iloc[-1])
-    efast = float(ema(closes, ema_fast).iloc[-1])
-    eslow = float(ema(closes, ema_slow).iloc[-1])
-    rsi_val = float(rsi(closes, rsi_period))
-    atr_val = float(atr(df, atr_period))
-    atr_pct = atr_val / price if price else 0.0
-    ema_gap = efast - eslow
+        raw_conf = max(0.0, min(1.0, ema_weight * ema_score + rsi_weight * rsi_score))
+        adj_conf = adjusted_confidence(
+            raw_conf, symbol, trust_weight=float(ENV.get("IDX_TRUST_WEIGHT", 0.4))
+        )
 
-    atr_sl_mult = float(env.get("INDICES_ATR_SL_MULT", 2.0))
-    atr_tp_mult = float(env.get("INDICES_ATR_TP_MULT", 3.0))
-    sl_dyn = atr_sl_mult * atr_val
-    tp_dyn = atr_tp_mult * atr_val
+        out = {
+            "symbol": symbol,
+            "timeframe": tf,
+            "price": price,
+            "ema_fast": float(ema_fast_val),
+            "ema_slow": float(ema_slow_val),
+            "ema_gap": float(ema_gap),
+            "rsi": float(rsi_val),
+            "atr_pct": float(atr_pct),
+            "raw_conf": round(raw_conf, 4),
+            "adj_conf": round(adj_conf, 4),
+        }
 
-    eps = float(env.get("INDICES_EPS", 10.0))
-    rsi_long_th = float(env.get("INDICES_RSI_LONG_TH", 60))
-    rsi_short_th = float(env.get("INDICES_RSI_SHORT_TH", 40))
+        log.info(
+            "[FEAT] %s TF=%s EMAf=%.2f EMAs=%.2f RSI=%.2f ATR%%=%.4f RAW=%.2f ADJ=%.2f",
+            symbol, tf, out["ema_fast"], out["ema_slow"], out["rsi"],
+            out["atr_pct"], out["raw_conf"], out["adj_conf"]
+        )
+        return out
 
-    # Session
-    session_open = _is_session_open(env, dt.datetime.now(), symbol)
-    if not session_open:
-        log.info("[SKIP] %s outside trading window", symbol)
-        return {"ok": False, "note": "outside_session", "symbol": symbol, "session_open": False}
-
-    # Clean summary
-    log.info(
-        "[FEATURES] %s EMA_FAST=%.2f EMA_SLOW=%.2f GAP=%.2f RSI=%.2f ATR=%.2f pts",
-        symbol, efast, eslow, ema_gap, rsi_val, atr_val
-    )
-
-    return {
-        "ok": True,
-        "symbol": symbol,
-        "tf": tf,
-        "price": price,
-        "ema_fast": efast,
-        "ema_slow": eslow,
-        "ema_gap": ema_gap,
-        "rsi": rsi_val,
-        "atr_pips": atr_val,
-        "atr_pct": atr_pct,
-        "sl_pips_atr": sl_dyn,
-        "tp_pips_atr": tp_dyn,
-        "eps": eps,
-        "rsi_long_th": rsi_long_th,
-        "rsi_short_th": rsi_short_th,
-        "session_open": session_open,
-    }
+    except Exception as e:
+        log.exception("[ERROR] compute_features failed for %s: %s", symbol, e)
+        return None
