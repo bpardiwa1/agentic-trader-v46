@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 import argparse
+import time
+from datetime import datetime
 import os
 from xau_v46.xau_agent_v46 import XauAgentV46
 from xau_v46.app.xau_env_v46 import ENV
@@ -30,7 +32,10 @@ def main():
     # ------------------------------
     # Logging setup
     # ------------------------------
-    log = setup_logger("xau_main_v46", level=args.loglevel.upper())
+    _XAU_LOG_DIR = "logs/xau_v4.6"
+    _XAU_LOG_LEVEL = str(ENV.get("XAU_LOG_LEVEL", ENV.get("LOG_LEVEL", "INFO"))).upper()
+    _XAU_LOG_NAME = f"xau_v46_{datetime.now():%Y-%m-%d}"
+    log = setup_logger(_XAU_LOG_NAME, log_dir=_XAU_LOG_DIR, level=_XAU_LOG_LEVEL)
 
     # ------------------------------
     # Resolve symbols from ENV or CLI

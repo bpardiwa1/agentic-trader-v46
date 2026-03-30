@@ -1,0 +1,1 @@
+curl -X POST "https://api.telegram.org/bot8448935427:AAFPEo6p1mmLIUR3PavzBwZOSFEFjpg70xY/sendMessage" -d "chat_id=6842274522" -d "text=Agentic Trader test message"

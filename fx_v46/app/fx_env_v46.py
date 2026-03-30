@@ -29,6 +29,7 @@ class EnvNamespace:
     def __init__(self, env_file: str | None = None):
         # --- Determine .env file ---
         env_path = env_file or os.path.join(os.path.dirname(__file__), "fx_v46.env")
+        self.env_path = env_path
         if os.path.exists(env_path):
             load_dotenv(env_path, override=True)
             print(f"[INFO] Environment loaded from {env_path}")
@@ -136,6 +137,10 @@ def _build_per_symbol_map():
     ENV.per = {}
     try:
         symbols = ENV.get("AGENT_SYMBOLS", "")
+
+        # Keep raw broker symbols list for logging/debugging
+        ENV.symbols_raw = [s.strip() for s in str(symbols).split(',') if s.strip()]
+        ENV.symbols = ENV.symbols_raw[:]  # backward compatible
         if not symbols:
             print("[WARN] No AGENT_SYMBOLS found in env.")
             return

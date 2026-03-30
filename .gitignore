@@ -1,5 +1,5 @@
 # =============================================================
-# Agentic Trader v4.6 Git Ignore Rules
+# Agentic Trader v4.6 Git Ignore Rules (Production Safe)
 # =============================================================
 
 # --- Python build & cache ---
@@ -9,13 +9,13 @@ __pycache__/
 *.pyd
 *.egg-info/
 *.egg
-*.log
 
 # --- Virtual environments ---
 .venv/
 venv/
 env/
 ENV/
+.venv.zip
 
 # --- IDE / Editor ---
 .vscode/
@@ -23,17 +23,31 @@ ENV/
 *.swp
 .DS_Store
 
-# --- Logs & Backups ---
+# --- Logs & Runtime ---
 logs/
 *.log
-*.bak
-*bkp*
+report/
+*.jsonl
+*.state.json
+
+# --- Backups ---
+*.bkp.*
+*_bkp_*.py
+log.bkp.*
+report.bkp.*
 backup/
 backups/
+
+# --- Archives / Dumps ---
 *.zip
+*.tar
+*.gz
 *.tar.gz
 
-# --- Old versions ---
+# --- Generated Reports ---
+*.csv
+
+# --- Old versions (protect current modules) ---
 !fx_v46/
 !xau_v46/
 !idx_v46/
@@ -41,12 +55,9 @@ indices_v4*/
 */v4/
 */v4.*
 
-# --- Environment files (safe templates only) ---
-# Keep only safe, non-secret env files under version control
+# --- Environment files (NEVER commit secrets) ---
+*.env
 .env
-!fx.env
-!xau.env
-!indices.env
 
 # --- Local test data ---
 tmp/

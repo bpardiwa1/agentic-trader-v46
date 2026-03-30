@@ -21,10 +21,12 @@ from fx_v46.util.logger import setup_logger
 
 # log = setup_logger(f"core.mt5_connect_v46__{datetime.now():%H%M%S}", level="INFO")
 
-asset = os.getenv("ASSET", "GENERIC").upper()
-timestamp = datetime.now().strftime("%H%M%S")
+# Unified core logging (single daily file under logs/core_v4.6)
+CORE_LOG_DIR = "logs/core_v4.6"
+CORE_LOG_LEVEL = os.getenv("CORE_LOG_LEVEL", "INFO").upper()
+CORE_LOG_NAME = f"core_v46_{datetime.now():%Y-%m-%d}"
+log = setup_logger(CORE_LOG_NAME, log_dir=CORE_LOG_DIR, level=CORE_LOG_LEVEL)
 
-log = setup_logger(f"mt5_connect_{asset}_{timestamp}")
 
 def _debug_env_dump():
     print("\n===== [MT5 CONNECT ENV DUMP] =====")

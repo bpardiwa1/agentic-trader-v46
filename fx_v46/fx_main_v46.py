@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 import argparse
+from datetime import datetime
+
 from fx_v46.fx_agent_v46 import FxAgentV46
 from fx_v46.app.fx_env_v46 import ENV
 from fx_v46.util.logger import setup_logger
@@ -33,7 +35,11 @@ def main():
     # ------------------------------
     # Logging setup (keeps your util.logger)
     # ------------------------------
-    log = setup_logger("fx_main_v46", level=args.loglevel.upper())
+    _FX_LOG_DIR = "logs/fx_v4.6"
+    _FX_LOG_LEVEL = str(ENV.get("FX_LOG_LEVEL", "INFO")).upper()
+    _FX_LOG_NAME = f"fx_v46_{datetime.now():%Y-%m-%d}"
+    log = setup_logger(_FX_LOG_NAME, log_dir=_FX_LOG_DIR, level=_FX_LOG_LEVEL)
+    log.info("FX v4.6 logger initialized — dir=%s, file=%s", _FX_LOG_DIR, _FX_LOG_NAME)
 
     # ------------------------------
     # Symbol resolution

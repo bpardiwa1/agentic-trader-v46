@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import argparse
+from datetime import datetime
 
 from idx_v46.app.idx_env_v46 import ENV
 from idx_v46.idx_agent_v46 import IdxAgentV46, _symbols_from_env
@@ -17,7 +18,12 @@ def main():
     p.add_argument("--loglevel", type=str, default=str(ENV.get("LOG_LEVEL", "INFO")))
     args = p.parse_args()
 
-    log = setup_logger("idx_main_v46", level=args.loglevel)
+     # Unified IDX logging (single daily file under logs/idx_v4.6)
+    _IDX_LOG_DIR = "logs/idx_v4.6"
+    _IDX_LOG_LEVEL = str(ENV.get("IDX_LOG_LEVEL", ENV.get("LOG_LEVEL", "INFO"))).upper()
+    _IDX_LOG_NAME = f"idx_v46_{datetime.now():%Y-%m-%d}"
+    log = setup_logger(_IDX_LOG_NAME, log_dir=_IDX_LOG_DIR, level=_IDX_LOG_LEVEL)
+    log.info("IDX v4.6 logger initialized — dir=%s, file=%s", _IDX_LOG_DIR, _IDX_LOG_NAME)
 
     syms = [s.strip() for s in (args.symbols or ",".join(_symbols_from_env())).split(",") if s.strip()]
     timeframe = ENV.get("IDX_TIMEFRAME", "M15")
