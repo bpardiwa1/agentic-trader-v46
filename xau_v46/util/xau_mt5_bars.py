@@ -51,7 +51,7 @@ def get_bars(symbol: str, timeframe: str = "M15", limit: int = 240) -> pd.DataFr
     # Ensure symbol is ready
     mt5.symbol_select(symbol, True)
 
-    # 🔁 Force history refresh with retries
+    #  Force history refresh with retries
     bars = None
     for i in range(5):
         bars = mt5.copy_rates_from_pos(symbol, tf, 0, limit)
@@ -78,6 +78,6 @@ if __name__ == "__main__":
     try:
         bars = get_bars(sym, "M15", 120)
         print(bars.tail())
-        print(f"✅ Retrieved {len(bars)} bars successfully at {datetime.now()}")
+        print(f"Retrieved {len(bars)} bars successfully at {datetime.now()}")
     except Exception as e:
-        print(f"❌ Fetch failed: {e}")
+        print(f"Fetch failed: {e}")

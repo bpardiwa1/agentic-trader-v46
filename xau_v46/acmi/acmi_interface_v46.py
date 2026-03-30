@@ -15,11 +15,11 @@ class _ACMI:
     def __init__(self):
         try:
             if mt5.initialize():
-                log.info("[ACMI] ✅ Connected to MT5")
+                log.info("[ACMI] Connected to MT5")
             else:
-                log.warning("[ACMI] ⚠️ Could not connect to MT5: %s", mt5.last_error())
+                log.warning("[ACMI] Could not connect to MT5: %s", mt5.last_error())
         except Exception as e:
-            log.warning("[ACMI] ⚠️ Initialization failed: %s", e)
+            log.warning("[ACMI] Initialization failed: %s", e)
 
     def post_status(self, symbol: str, payload: dict):
         """Post trade status to dashboard or log if dashboard is inactive."""
