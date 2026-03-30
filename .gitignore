@@ -56,8 +56,8 @@ indices_v4*/
 */v4.*
 
 # --- Environment files (NEVER commit secrets) ---
-*.env
-.env
+!*.env
+!.env
 
 # --- Local test data ---
 tmp/
